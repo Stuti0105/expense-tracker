@@ -1,0 +1,125 @@
+import java.sql.*;
+import java.util.Scanner;
+
+public class ExpenditureTracker {
+    static final String HOST = "jdbc:mysql://localhost:3306/expenses";
+    static final String USER = "root";
+    static String PASSW;
+
+    static final String[] prefix = {"Credit :- ", "Debit :- ", "Savings :- "};
+
+    static class Expenditure {
+        String creditamount;
+        String savingamount;
+        String debitamount;
+
+        public Expenditure(String credit, String saving, String debit) {
+            this.creditamount = credit;
+            this.savingamount = saving;
+            this.debitamount = debit;
+            System.out.println("Debit: " + debitamount + "\tCredit: " + creditamount + "\tSavings: Rs. " + savingamount);
+        }
+    }
+
+    static class Tracker {
+        Scanner sc = new Scanner(System.in);
+
+        public String addExpenditure() {
+            System.out.print("\nEnter credit: ");
+            sc.nextLine();  // clear buffer
+            String credit = sc.nextLine();
+
+            System.out.print("Enter debit: ");
+            String debit = sc.nextLine();
+
+            System.out.print("Enter saving: ");
+            String saving = sc.nextLine();
+
+            new Expenditure(credit, saving, debit);
+            return "INSERT INTO expenditure VALUES('" + credit + "','" + debit + "','" + saving + "')";
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        Connection conn = null;
+
+        System.out.print("Enter Password For The Database: ");
+        PASSW = sc.nextLine();
+
+        try {
+            conn = DriverManager.getConnection(HOST, USER, PASSW);
+            System.out.print("\n");
+            Thread.sleep(1000);
+            String loggedin = "Logged In...";
+            for (char c : loggedin.toCharArray()) {
+                System.out.print(c);
+                Thread.sleep(100);
+            }
+            Thread.sleep(150);
+        } catch (Exception e) {
+            System.out.println("Connection Error: " + e.getMessage());
+            return;
+        }
+
+        Tracker tracker = new Tracker();
+        char choice;
+        do {
+            System.out.println("\n1. Add an expenditure");
+            System.out.println("2. Display expenditure");
+            System.out.println("3. Show total Savings");
+            System.out.println("4. Exit");
+            System.out.print("Enter your choice: ");
+            choice = sc.next().charAt(0);
+
+            try (Statement stmt = conn.createStatement()) {
+                switch (choice) {
+                    case '1':
+                        String query = tracker.addExpenditure();
+                        int rows = stmt.executeUpdate(query);
+                        if (rows > 0) {
+                            System.out.println("Data inserted.\n");
+                        }
+                        break;
+
+                    case '2':
+                        ResultSet rs = stmt.executeQuery("SELECT * FROM expenditure");
+                        System.out.println();
+                        while (rs.next()) {
+                            for (int i = 1; i <= 3; i++) {
+                                System.out.println(prefix[i - 1] + rs.getString(i));
+                            }
+                            System.out.println();
+                        }
+                        rs.close();
+                        break;
+
+                    case '3':
+                        int total = 0;
+                        ResultSet rs3 = stmt.executeQuery("SELECT * FROM expenditure");
+                        while (rs3.next()) {
+                            total += Integer.parseInt(rs3.getString(3));
+                        }
+                        System.out.println("\nTotal : " + total + "\n");
+                        rs3.close();
+                        break;
+
+                    case '4':
+                        System.out.println("Exiting...");
+                        break;
+
+                    default:
+                        System.out.println("Invalid choice.");
+                }
+            } catch (SQLException e) {
+                System.out.println("SQL Error: " + e.getMessage());
+            }
+        } while (choice != '4');
+
+        try {
+            if (conn != null) conn.close();
+        } catch (SQLException ex) {
+            System.out.println("Closing connection failed.");
+        }
+    }
+}
