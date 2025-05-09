@@ -1,0 +1,9 @@
+CREATE DATABASE expenses;
+
+USE expenses;
+
+CREATE TABLE expenditure (
+    credit VARCHAR(50),
+    debit VARCHAR(50),
+    saving VARCHAR(50)
+);
